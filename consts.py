@@ -1,0 +1,7 @@
+passenger_type = 'passenger'
+driver_type = 'driver'
+phone_number = 'phone_number'
+user_name = 'name'
+address = 'address'
+ID = '_id'
+user_type = 'user_type'
