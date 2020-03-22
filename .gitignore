@@ -6,6 +6,12 @@ __pycache__/
 # C extensions
 *.so
 
+#idea folder
+.idea
+
+#sever log
+IDFCarpoolServer.log
+
 # Distribution / packaging
 .Python
 build/
