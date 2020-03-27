@@ -46,6 +46,6 @@ def delete_user():
 
         return DBHandler.delete_user(request.args.get(user_type), user_id)
 
-
-logger.info('Server has reloaded')
-app.run()
+if __name__ == "__main__":
+    logger.info('Server has reloaded')
+    app.run()
