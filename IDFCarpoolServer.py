@@ -11,7 +11,12 @@ logger = log.setup_custom_logger('IDFCarpoolService')
 def create_json_object_from_request_args(request_args):
     return {argument: request_args.get(argument) for argument in request_args}
 
+@app.route('/')
+def hello():
+    logger.info('Get request to create new user')
+    return 'Raziel Yaakov'
 
+    
 @app.route('/createuser', methods=['POST'])
 def create_new_user():
     logger.info('Get request to create new user')
