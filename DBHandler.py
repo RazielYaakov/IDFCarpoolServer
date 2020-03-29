@@ -1,114 +1,127 @@
-import pymongo
-from pymongo.errors import PyMongoError
+from firebase import Firebase
+from requests import RequestException
 
 import log
 from consts import *
 
 logger = log.setup_custom_logger('DBHandler')
-my_client = pymongo.MongoClient(db_url)
-my_db = my_client[db_name]
-drivers_collection = my_db[drivers_collection_name]
-passengers_collection = my_db[passengers_collection_name]
+
+# firebase config
+firebase_config = {
+    "apiKey": "AIzaSyCkYngiJhQe9V7xlBsPIJzAf5quI2SBIFA",
+    "authDomain": "carpool-832da.firebaseapp.com",
+    "databaseURL": "https://carpool-832da.firebaseio.com",
+    "projectId": "carpool-832da",
+    "storageBucket": "carpool-832da.appspot.com",
+    "messagingSenderId": "212737775848",
+    "appId": "1:212737775848:web:ef89caf857c04538d1915d",
+    "measurementId": "G-VB5385FGM7"
+}
+firebase = Firebase(firebase_config)
+auth = firebase.auth()
+logged_user = auth.sign_in_with_email_and_password(user_email, user_password)
+firebase_db = firebase.database()
 
 
-def is_user_exist_in_db(type_of_user, user_id):
-    logger.info('Check if the %s with phone-number=%s already exist in DB (%s collection)',
-                type_of_user, user_id, type_of_user)
-    relevant_collection = get_relevant_collection(type_of_user)
-
-    return not relevant_collection.find_one({
-        phone_number: user_id
-    }) is None
+def get_all_users_from_db():
+    return firebase_db.child(users_collection).get()
 
 
-def get_relevant_collection(type_of_user):
-    return (drivers_collection, passengers_collection)[type_of_user == passenger_type]
+def is_user_exist_in_db(user_id):
+    logger.info('Check if user with phone-number=%s exists in DB', user_id)
+
+    all_users = get_all_users_from_db()
+
+    for user in all_users.each():
+        if user.val().get(phone_number) == user_id:
+            logger.info('User exists in DB')
+            return True
+
+    return False
 
 
-def is_data_changed(old_data, new_data):
-    return not old_data == new_data
+def get_user_from_db(user_id):
+    if is_user_exist_in_db(user_id):
+        all_users = firebase_db.child(users_collection).get()
+
+        for user in all_users.each():
+            if user.val().get(phone_number) == user_id:
+                return user
+    else:
+        raise RequestException("User doesn't exists in DB")
 
 
-def create_new_user(type_of_user, user_data):
-    logger.info('Trying to create new %s in DB', type_of_user)
-    relevant_collection = get_relevant_collection(type_of_user)
-
-    try:
-        if is_user_exist_in_db(type_of_user, user_data.get(phone_number)):
-            logger.warning('The %s already exist in DB', type_of_user)
-            logger.error("user didn't created in DB")
-
-            return "user already exist in DB"
-        else:
-            logger.info("%s doesn't exist in DB", type_of_user)
-            logger.info('Trying to insert the %s to DB', type_of_user)
-
-            relevant_collection.insert_one(user_data)
-
-            logger.info('user creation completed successfully')
-
-            return 'user creation completed successfully'
-    except PyMongoError as err:
-        logger.error(str(err))
-        logger.warning('User does not created')
-
-        return 'User does not created'
-
-
-def update_user(type_of_user, user_new_data):
-    logger.info('Trying to update user with phone_number=%s data in DB (%s collection)',
-                user_new_data.get(phone_number), type_of_user)
-    relevant_collection = get_relevant_collection(type_of_user)
+def create_new_user(new_user_data):
+    logger.info('Trying to create new user in DB')
 
     try:
-        if not is_user_exist_in_db(type_of_user, user_new_data.get(phone_number)):
-            logger.error('User does not exist in DB (%s collection)', type_of_user)
+        if is_user_exist_in_db(new_user_data.get(phone_number)):
+            logger.error("New user wasn't created")
 
-            return 'User does not exist in DB (%s collection)', type_of_user
+            return "User already exists in DB"
         else:
-            logger.info('User founded in DB')
-            logger.info('Trying to update user data')
+            logger.info("User doesn't exists in DB")
+            logger.info('Trying to insert the user to DB')
 
-            old_user_data = relevant_collection.find_one({phone_number: user_new_data.get(phone_number)}, {ID: 0})
+            firebase_db.child(users_collection).push(new_user_data)
 
-            logger.info('Making sure the user data needs to be updated')
-            if is_data_changed(old_user_data, user_new_data):
-                logger.info('User data has changed, trying to update in DB')
-                relevant_collection.update_one(old_user_data, {"$set": user_new_data})
-                logger.info('Update user completed successfully')
+            logger.info('User creation completed successfully')
 
-                return 'Update user completed successfully'
-            else:
-                logger.info('User data has no changes, not updating the DB')
-
-                return 'User data has no changes, not updating the DB'
-    except PyMongoError as err:
+            return 'User creation completed successfully'
+    except RequestException as err:
         logger.error(str(err))
-        logger.warning('User does not updated')
+        logger.warning("User wasn't created")
 
+        return "User wasn't created"
+
+
+def update_user(user_updated_data):
+    logger.info('Trying to update user with phone_number=%s in DB', user_updated_data.get(phone_number))
+
+    try:
+        logger.info('Trying to get old user from DB')
+        user_old_data = get_user_from_db(user_updated_data.get(phone_number))
+        logger.info('Trying to update user data')
+        firebase_db.child(users_collection).child(user_old_data.key()).update(user_updated_data)
+        logger.info('Update user completed successfully')
+
+        return 'Update user completed successfully'
+    except RequestException as err:
+        logger.error(str(err))
+        logger.warning("User doesn't updated")
         return 'User does not updated'
 
 
-def delete_user(type_of_user, user_id):
-    logger.info('Trying to delete user with phone_number=%s from DB (%s collection)', user_id, type_of_user)
-    relevant_collection = get_relevant_collection(type_of_user)
+def delete_user(user_id):
+    logger.info('Trying to delete user with phone_number=%s from DB', user_id)
 
     try:
-        if not is_user_exist_in_db(type_of_user, user_id):
-            logger.error('User with phone-number=%s does not exist in DB (%s collection)', user_id, type_of_user)
+        logger.info('Trying to get user from DB')
+        user_to_delete = get_user_from_db(user_id)
+        logger.info('Trying to delete user')
 
-            return 'User does not exist in DB'
-        else:
-            logger.info('User founded in DB')
-            logger.info('Trying to delete user')
+        firebase_db.child(users_collection).child(user_to_delete.key()).remove()
 
-            relevant_collection.delete_one({phone_number: user_id})
+        logger.info('User deleted successfully')
 
-            logger.info('User deleted successfully')
-
-            return 'User deleted successfully'
-    except PyMongoError as err:
+        return 'User deleted successfully'
+    except RequestException as err:
         logger.error(str(err))
-        logger.warning('User does not deleted')
+        logger.warning("User wasn't deleted")
 
-        return 'User does not deleted'
+        return "User wasn't deleted"
+
+
+def get_all_users_with_specific_routes_and_hour(source_point, destination_point, leaving_hour):
+    logger.info('Searches for all drivers that are leave from %s and going to to %s at time %s',
+                source_point, destination_point, leaving_hour)
+    all_users = get_all_users_from_db()
+    matching_users = []
+
+    for user in all_users.each():
+        if user.val().get(user_type) == driver_type:
+            if user.val().get(source) == source_point and leaving_hour == user.val().get(leaving_time) and \
+                    user.val().get(destination) == destination_point:
+                matching_users.append(user.val())
+
+    return matching_users
