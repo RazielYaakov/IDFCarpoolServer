@@ -5,25 +5,33 @@ import log
 from consts import *
 
 logger = log.setup_custom_logger('DBHandler')
-my_client = pymongo.MongoClient("mongodb://localhost:27017/")
-my_db = my_client["Carpool"]
-drivers_collection = my_db["Drivers"]
-passengers_collection = my_db["Passengers"]
+my_client = pymongo.MongoClient(db_url)
+my_db = my_client[db_name]
+drivers_collection = my_db[drivers_collection_name]
+passengers_collection = my_db[passengers_collection_name]
 
 
 def is_user_exist_in_db(type_of_user, user_id):
     logger.info('Check if the %s with phone-number=%s already exist in DB (%s collection)',
                 type_of_user, user_id, type_of_user)
-    relevant_collection = (drivers_collection, passengers_collection)[type_of_user == passenger_type]
+    relevant_collection = get_relevant_collection(type_of_user)
 
     return not relevant_collection.find_one({
         phone_number: user_id
     }) is None
 
 
+def get_relevant_collection(type_of_user):
+    return (drivers_collection, passengers_collection)[type_of_user == passenger_type]
+
+
+def is_data_changed(old_data, new_data):
+    return not old_data == new_data
+
+
 def create_new_user(type_of_user, user_data):
     logger.info('Trying to create new %s in DB', type_of_user)
-    relevant_collection = (drivers_collection, passengers_collection)[type_of_user == passenger_type]
+    relevant_collection = get_relevant_collection(type_of_user)
 
     try:
         if is_user_exist_in_db(type_of_user, user_data.get(phone_number)):
@@ -47,14 +55,10 @@ def create_new_user(type_of_user, user_data):
         return 'User does not created'
 
 
-def is_data_changed(old_data, new_data):
-    return not old_data == new_data
-
-
 def update_user(type_of_user, user_new_data):
     logger.info('Trying to update user with phone_number=%s data in DB (%s collection)',
                 user_new_data.get(phone_number), type_of_user)
-    relevant_collection = (drivers_collection, passengers_collection)[type_of_user == passenger_type]
+    relevant_collection = get_relevant_collection(type_of_user)
 
     try:
         if not is_user_exist_in_db(type_of_user, user_new_data.get(phone_number)):
@@ -87,7 +91,7 @@ def update_user(type_of_user, user_new_data):
 
 def delete_user(type_of_user, user_id):
     logger.info('Trying to delete user with phone_number=%s from DB (%s collection)', user_id, type_of_user)
-    relevant_collection = (drivers_collection, passengers_collection)[type_of_user == passenger_type]
+    relevant_collection = get_relevant_collection(type_of_user)
 
     try:
         if not is_user_exist_in_db(type_of_user, user_id):
