@@ -6,6 +6,9 @@ __pycache__/
 # C extensions
 *.so
 
+# firebase credentials
+credentials.json
+
 #idea folder
 .idea
 
