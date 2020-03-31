@@ -1,4 +1,4 @@
 Flask
 firebase
 firebase-admin
-
+logging
