@@ -119,3 +119,6 @@ def add_junk_rides(i):
 
 if __name__ == "__main__":
     logger.info('Server has reloaded')
+
+logger.info('Server has reloaded')
+app.run()
