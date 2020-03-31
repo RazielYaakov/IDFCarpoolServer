@@ -11,7 +11,7 @@ variables:
   azureServiceConnectionId: '03714180-6650-4e84-92a1-3c4c3781be86'
   
   # Web app name
-  webAppName: ''
+  webAppName: 'IDF Carpool'
 
   # Agent VM image name
   vmImageName: 'ubuntu-latest'
