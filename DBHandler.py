@@ -4,8 +4,9 @@ from firebase_admin import db
 
 import log
 
-logger = log.setup_custom_logger('DBHandler')
+logger = log.setup_custom_logger()
 
+logger.info('Initialize connection with firebase-DB')
 cred = credentials.Certificate("credentials.json")
 firebase_admin.initialize_app(cred, {
     "databaseURL": "https://carpool-832da.firebaseio.com",

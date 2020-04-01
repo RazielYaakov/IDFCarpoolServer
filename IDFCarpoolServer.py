@@ -8,7 +8,7 @@ import log
 from consts import phone_number, ride_ID
 
 app = Flask(__name__)
-logger = log.setup_custom_logger('IDFCarpoolService')
+logger = log.setup_custom_logger()
 
 
 def create_json_object_from_request_args(request_args):
@@ -120,5 +120,4 @@ def add_junk_rides(i):
 if __name__ == "__main__":
     logger.info('Server has reloaded')
 
-logger.info('Server has reloaded')
 app.run()

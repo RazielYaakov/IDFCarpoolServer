@@ -14,7 +14,7 @@ from datetime import datetime
 #     'text': 'Hi!\n You have a ride request\n :)',
 # })
 
-logger = log.setup_custom_logger('RidesHandler')
+logger = log.setup_custom_logger()
 firebase_db = DBHandler.get_firebase_db_ref()
 
 
@@ -84,7 +84,15 @@ def create_ride(ride_request):
 
 
 def get_ride_from_db(ride_id):
-    return firebase_db.child(rides_collection).child(ride_id)
+    logger.info('Trying to find ride with id=%s', ride_id)
+    all_rides = get_all_rides_from_db()
+
+    for ride in all_rides:
+        if ride[key_position] == ride_id:
+            logger.info('Ride founded')
+            return ride
+
+    return None
 
 
 def cancel_ride(ride_id):
