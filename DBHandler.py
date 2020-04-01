@@ -9,7 +9,7 @@ logger = log.setup_custom_logger()
 
 logger.info('Initialize connection with firebase-DB')
 logger.info(os.environ['FIREBASE_CONFIG'])
-# cred = credentials.Certificate("credentials.json")
+# cred = credentials.Certificate("credentials.json") test
 firebase_admin.initialize_app(options={
     "databaseURL": "https://carpool-832da.firebaseio.com",
     'databaseAuthVariableOverride': {
