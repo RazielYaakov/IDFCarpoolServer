@@ -16,5 +16,5 @@ COPY . .
 EXPOSE 5000
 
 # Run app.py when the container launches
-ENTRYPOINT [ “python” ]
-CMD [ “IDFCarpoolServer.py” ]
+ENTRYPOINT [ "python" ]
+CMD [ "IDFCarpoolServer.py" ]
