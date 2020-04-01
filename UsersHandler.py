@@ -5,7 +5,7 @@ from requests import RequestException
 from datetime import datetime
 
 
-logger = log.setup_custom_logger('UsersHandler')
+logger = log.setup_custom_logger()
 firebase_db = DBHandler.get_firebase_db_ref()
 
 
