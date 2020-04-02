@@ -2,144 +2,102 @@
   JSONs are shown below ↓↓↓
 
   API:
-  2) /createuser POST:
+
+  1) /login POST:
   expect for new_driver / new_passenger
   return status - Success or Failure
-  3) /updateuser POST:
+
+  2) /update_driver POST:
   expect for updated_driver_details / updated_passenger_details
   return status - Success or Failure
-  4) /deleteuser POST:
-  expect for user_to_delete
-  return status - Success or Failure
-  5) /findride POST
+
+  3) /find_ride POST
   expect for ride_request
   return 3 "ride" options as list named "rides"
-  6) /askforaride POST
-  expect for ask_for_a_ride
-  return status - Success or Failure
-  7) /showmyriderequests POST
+
+  4) /showmyriderequests GET
   expect for show_my_ride_requests
   return list of all rides
-  8) /cancelride POST
+
+  5) /cancelride POST
   expect for cancel_ride_request
   return status - Success or Failure
-  9) /acceptride POST
+
+  6) /acceptride POST
   expect for ride
   return status - Success or Failure
-  10) /restoreuser POST
-  expect for restore_user_request
-  return user details from DB
 
   {
-    "new_driver": {
-      "userType": "driver-DEFAULT",
-      "name": "a-name",
-      "phoneNumber": "a-phoneNumber",
-      "leavingTime": {
-        "sunday": "sundayHour",
-        "monday": "mondayHour",
-        "tuesday": "tuesdayHour",
-        "wednesday": "wednesdayHour",
-        "thursday": "thursdayHour"
-      },
-      "baseLocation": "a-baseLocation",
-      "homeLocation": "a-homeLocation",
-      "availablePlaces": "an-availablePlaces",
+    "passenger": {
+      "userType": string,
+      "name": string,
+      "phoneNumber": string
     }
   },
+
   {
-    "new_passenger": {
-      "userType": "passenger-DEFAULT",
-      "name": "a-name",
-      "phoneNumber": "a-phoneNumber",
-      "baseLocation": "a-baseLocation",
-      "homeLocation": "a-homeLocation",
-    }
-  },
+      "driver": {
+        "userType": string,
+        "name": string,
+        "phoneNumber": string,
+        "leavingHomeTime": Time,
+        "leavingBaseTime": Time
+        "baseLocation": string,
+        "homeLocation": string,
+      }
+    },
+
   {
     "updated_driver_details": {
-      "userType": "driver-DEFAULT",
-      "name": "a-name",
-      "phoneNumber": "a-phoneNumber",
-      "leavingTime": {
-        "sunday": "sundayHour",
-        "monday": "mondayHour",
-        "tuesday": "tuesdayHour",
-        "wednesday": "wednesdayHour",
-        "thursday": "thursdayHour"
-      },
-      "baseLocation": "a-baseLocation",
-      "homeLocation": "a-homeLocation",
-      "availablePlaces": "an-availablePlaces"
+      "leavingHomeTime": Time,
+	  "leavingBaseTime": Time
+      "baseLocation": string,
+      "homeLocation": string,
+      "userType": string
     }
   },
-  {
-    "updated_passenger_details": {
-      "userType": "passenger-DEFAULT",
-      "name": "a-name",
-      "phoneNumber": "a-phoneNumber",
-      "baseLocation": "a-baseLocation",
-      "homeLocation": "a-homeLocation"
-    }
-  },
-  {
-    "user_to_delete": {
-      "name": "a-name",
-      "phoneNumber": "a-phoneNumber"
-    }
-  },
+
   {
     "ride_request": {
-      "phoneNumber": "a-phoneNumber",
-      "date": "a-date",
-      "baseLocation": "a-baseLocation",
-      "wantedLocation": "a-wantedLocation",
-      "leavingTime": "a-leavingTime"
+      "source": string,
+      "destination": string,
+      "DateTime": DateTime,
+	  "phoneNumber": string,
+	  "homeToBase": bool
     }
   },
-  {
-    "ask_for_a_ride": {
-      "passengerPhoneNumber": "a-passengerPhoneNumber",
-      "passengerWantedLocation": "a-passengerWantedLocation",
-      "driverPhoneNumber": "a-driverPhoneNumber",
-      "date": "a-date",
-      "leavingTime": "a-leavingTime"
-    }
-  },
-  {
-    "show_my_ride_requests": {
-      "phoneNumber": "a-phoneNumber"
-    }
-  },
-  {
-    "cancel_ride_request": {
-      "passengerPhoneNumber": "a-passengerPhoneNumber",
-      "wantedLocation": "a-wantedLocation",
-      "baseLocation": "a-baseLocation",
-      "driverPhoneNumber": "a-driverPhoneNumber",
-      "date": "a-date",
-      "leavingTime": "a-leavingTime"
-    }
-  },
-  {
-      "ride": {
-        "driverPhoneNumber": "driverPhoneNumber",
-        "driverAccepted": "True/False",
-        "passengerPhoneNumber": "passengerPhoneNumber",
-        "passengerAccepted": "True/False",
-        "baseLocation": "a-baseLocation",
-        "wantedLocation": "a-wantedLocation",
-        "date": "a-date",
-        "leavingTime": "a-leavingTime"
-      }
-    }
-    {
-         "restore_user_request": {
-           "name": "a-name",
-           "phoneNumber": "a-phoneNumber"
-         }
+
+  "accept_request": {
+      userType: string,
+      rideId: string,
     }
 
-  Dana if you got here send Hi and remember:
-  If you want to get permissions in GitHub,
-  Tell me and I'll give you permissions to Firebase ☻
+   {
+    "cancel_ride_request": {
+      rideId: string,
+    }
+
+  {
+    "show_my_ride_requests": {
+      "phoneNumber": string,
+    }
+
+  {
+      "ride": {
+		rideId: string,
+		driver:{
+		    name: string,
+			phoneNumber: string,
+			accepted: bool,
+		}
+        passenger:{
+            name: string,
+			phoneNumber: string,
+			accepted: bool,
+		}
+        "source": string,
+        "destination": string,
+        "DateTime": DateTime,
+		"accepted" : bool
+      }
+    }

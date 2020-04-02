@@ -1,3 +1,5 @@
+arrow
+requests
 log3
 Flask
 firebase
