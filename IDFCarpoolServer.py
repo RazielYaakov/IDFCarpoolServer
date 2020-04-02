@@ -1,5 +1,4 @@
 from flask import Flask, request
-from flask_cors import CORS
 
 import RidesHandler
 import UsersHandler
@@ -8,7 +7,6 @@ from consts import phone_number, ride_ID, user_type
 
 app = Flask(__name__)
 logger = log.setup_custom_logger()
-CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 
 def create_json_object_from_request_args(request_args):
