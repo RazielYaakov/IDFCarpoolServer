@@ -23,8 +23,8 @@ def get_all_rides_from_db():
 
 
 def parse_time_to_hour_minutes_seconds(ride_time):
-    parsed_ride_hour = arrow.get(ride_time).datetime.hour
-    parsed_ride_minutes = arrow.get(ride_time).datetime.minute
+    parsed_ride_hour = arrow.get(ride_time).to('local').datetime.hour
+    parsed_ride_minutes = arrow.get(ride_time).to('local').datetime.minute
 
     return str(parsed_ride_hour) + ':' + str(parsed_ride_minutes)
 
@@ -95,7 +95,7 @@ def create_optional_rides(ride_request, passenger, optional_drivers):
         if optional_ride is not None:
             optional_rides.append(optional_ride)
 
-            if len(optional_drivers) == max_optional_drivers:
+            if len(optional_rides) == max_optional_drivers:
                 break
 
     return optional_rides
@@ -142,7 +142,7 @@ def build_ride_object(ride_request, passenger, driver):
         },
         source: ride_request.get(source),
         destination: ride_request.get(destination),
-        date: ride_request.get(date),
+        date: str(arrow.get(ride_request.get(date)).to('local')),
         accepted: False
     }
 
@@ -164,7 +164,7 @@ def is_same_ride_request(ride, ride_request, passenger, driver):
            ride.get(driver_type).get(phone_number) == driver[values_position].get(phone_number) and \
            ride.get(source) == ride_request.get(source) and \
            ride.get(destination) == ride_request.get(destination) and \
-           ride.get(date) == ride_request.get(date)
+           ride.get(date) == arrow.get(ride_request.get(date)).to('local')
 
 
 def get_ride_from_db(ride_id):
