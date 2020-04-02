@@ -28,3 +28,4 @@ values_position = 1
 max_optional_drivers = 5
 success = 'Success'
 failure = 'Failure'
+time_zone = 'Asia/Jerusalem'
