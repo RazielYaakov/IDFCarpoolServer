@@ -1,14 +1,14 @@
-import json
-
 from flask import Flask, request
+from flask_cors import CORS
 
 import RidesHandler
 import UsersHandler
 import log
-from consts import phone_number, ride_ID
+from consts import phone_number, ride_ID, user_type
 
 app = Flask(__name__)
 logger = log.setup_custom_logger()
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 
 def create_json_object_from_request_args(request_args):
@@ -21,12 +21,12 @@ def hello():
 
 
 # completed
-@app.route('/createuser', methods=['POST'])
-def create_new_user():
-    logger.info('Get request to create new user: ' + request.url)
-    new_user_data = create_json_object_from_request_args(request.args)
+@app.route('/login', methods=['POST'])
+def login_user():
+    logger.info('Get request to login: ' + request.url)
+    user_data = create_json_object_from_request_args(request.args)
 
-    return UsersHandler.create_new_user(new_user_data)
+    return UsersHandler.login(user_data)
 
 
 # completed
@@ -48,73 +48,65 @@ def delete_user():
 
 
 # completed
-@app.route('/restoreuser', methods=['POST'])
-def restore_user():
-    logger.info('Get request to restore user: ' + request.url)
-    id_of_user_to_restore = request.args.get(phone_number)
-
-    return json.dumps(UsersHandler.restore_user(id_of_user_to_restore))
-
-
-# completed
 @app.route('/findride', methods=['POST'])
-def find_a_ride():
-    logger.info('Get request to find a ride: ' + request.url)
-    ride_request = create_json_object_from_request_args(request.args)
+def find_ride():
+    logger.info('Get request to find ride: ' + request.url)
+    find_ride_request = create_json_object_from_request_args(request.args)
 
-    return str(RidesHandler.find_a_ride(ride_request))
-
-
-@app.route('/askforaride', methods=['POST'])
-def ask_for_a_ride():
-    logger.info('Get request to ask for a ride: ' + request.url)
-    ride_request = create_json_object_from_request_args(request.args)
-
-    return RidesHandler.create_ride(ride_request)
+    return str(RidesHandler.find_ride(find_ride_request))
 
 
-@app.route('/showmyriderequests', methods=['POST'])
+@app.route('/showmyriderequests')
 def show_user_ride_requests():
     logger.info('Get request to show user ride requests: ' + request.url)
+    type_of_user = request.args.get(user_type)
     user_id = request.args.get(phone_number)
 
-    return RidesHandler.get_user_ride_requests(user_id)
+    return str(RidesHandler.get_user_ride_requests(type_of_user, user_id))
 
 
 @app.route('/cancelride', methods=['POST'])
 def cancel_ride():
     logger.info('Get request to cancel ride requests: ' + request.url)
+    type_of_user = request.args.get(user_type)
     ride_id = request.args.get(ride_ID)
 
-    return RidesHandler.cancel_ride(ride_id)
+    return RidesHandler.cancel_ride(type_of_user, ride_id)
 
 
 @app.route('/acceptride', methods=['POST'])
 def accept_ride():
     logger.info('Get request to accept ride requests: ' + request.url)
-    ride_request = create_json_object_from_request_args(request.args)
+    type_of_user = request.args.get(user_type)
     ride_id = request.args.get(ride_ID)
 
-    return RidesHandler.accept_ride(ride_request, ride_id)
+    return RidesHandler.accept_ride(type_of_user, ride_id)
 
 
-def add_junk_rides(i):
-    ride = {
-        "driverPhoneNumber": str(i),
-        "driverAccepted": False,
-        "passengerPhoneNumber": str(i + 1),
-        "passengerAccepted": False,
-        "baseLocation": "a-baseLocation",
-        "wantedLocation": "a-wantedLocation",
-        "date": "a-date",
-        "leavingTime": "a-leavingTime"
+def add_junk_users(i):
+    hour = 7
+    minutes = 00
+
+    driver = {
+        "userType": "driver",
+        "name": "razi",
+        "phoneNumber": str(i),
+        "leavingHomeTime": str(hour) + ":" + str(minutes),
+        "leavingBaseTime": str(hour + 6) + ":" + str(minutes),
+        "baseLocation": "a",
+        "homeLocation": "b",
     }
 
-    for x in range(i + 2, i + 10):
-        RidesHandler.create_ride(ride)
-        ride["driverPhoneNumber"] = x
-        ride["passengerPhoneNumber"] = x + 1
-        x = x + 1
+    for x in range(i, i + 5):
+        UsersHandler.login(driver)
+        driver["phoneNumber"] = str(x)
+
+    driver["baseLocation"] = "b"
+    driver["homeLocation"] = "a"
+
+    for x in range(i + 5, i + 10):
+        UsersHandler.login(driver)
+        driver["phoneNumber"] = str(x)
 
 
 if __name__ == "__main__":
