@@ -4,4 +4,4 @@ log3
 Flask
 firebase
 firebase-admin
-
+exponent_server_sdk
