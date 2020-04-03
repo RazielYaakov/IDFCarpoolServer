@@ -2,7 +2,7 @@ from datetime import datetime
 
 import arrow
 from requests import RequestException
-
+import PushNotificationsHandler
 import DBHandler
 import UsersHandler
 import log
@@ -191,7 +191,7 @@ def cancel_ride(type_of_user, ride_id):
             logger.info('Trying to delete ride request from DB')
             firebase_db.child(rides_collection).child(ride_id).delete()
             logger.info('Ride deleted successfully')
-            # push notification to the other user said that the ride is canceled
+            send_cancel_push_notification_to_other_user(ride_to_delete, type_of_user)
             return success
         else:
             logger.error("Ride doesn't exists in DB")
@@ -203,6 +203,20 @@ def cancel_ride(type_of_user, ride_id):
 
         return failure
 
+def send_cancel_push_notification_to_other_user(ride, cancelled_user_type):
+    cancelled_user = ride[1][cancelled_user_type]
+    other_user = ride[1][get_other_user_type(cancelled_user_type)]
+
+    if other_user[accepted]:
+        if cancelled_user_type == passenger_type:
+            PushNotificationsHandler.send_push_notification(other_user[token], cancelled_user[user_name]+' ביטל את הטרמפ, אל תחכה לו')
+        elif cancelled_user_type == driver_type:
+            PushNotificationsHandler.send_push_notification(other_user[token], 'לא מסתדר ל'+cancelled_user[user_name]+' להסיע אותך, חפש שוב טרמפ')
+
+def get_other_user_type(type_of_user):
+    if type_of_user == driver_type: return passenger_type
+
+    return driver_type
 
 def accept_ride(type_of_user, ride_id):
     logger.info('Trying to accept ride request')
@@ -213,9 +227,14 @@ def accept_ride(type_of_user, ride_id):
 
         if ride_to_accept is not None:
             logger.info('Trying to accept ride request from DB')
-            firebase_db.child(rides_collection).child(ride_id).child(type_of_user).child(accepted).set(True)
-            logger.info('Ride accepted successfully by %s', type_of_user)
-            send_push_notification_to_other_user()
+            if ride_to_accept[1][driver_type][accepted] == True and ride_to_accept[1][passenger_type][accepted] == True and type_of_user == passenger_type:
+                firebase_db.child(rides_collection).child(ride_id).child(accepted).set(True)
+                logger.info('Ride accepted successfully by both passenger and driver')
+            else:
+                firebase_db.child(rides_collection).child(ride_id).child(type_of_user).child(accepted).set(True)
+                logger.info('Ride accepted successfully by %s', type_of_user)
+
+            send_accept_push_notification_to_other_user(ride_id)
 
             return success
         else:
@@ -229,9 +248,18 @@ def accept_ride(type_of_user, ride_id):
         return failure
 
 
-def send_push_notification_to_other_user():
-    pass
-
+def send_accept_push_notification_to_other_user(ride_id):
+    ride_accepted = firebase_db.child(rides_collection).child(ride_id).child(accepted).get()
+    driver = firebase_db.child(rides_collection).child(ride_id).child(driver_type).get()
+    passenger = firebase_db.child(rides_collection).child(ride_id).child(passenger_type).get()
+    
+    if ride_accepted == False:
+        if driver[accepted] == False and passenger[accepted] == True: 
+            PushNotificationsHandler.send_push_notification(driver[token], passenger[user_name] +' רוצה לנסוע איתך, חבל לנסוע לבד')
+        elif driver[accepted] == True and passenger[accepted] == True:
+            PushNotificationsHandler.send_push_notification(passenger[token], driver[user_name]+' סבבה עם בקשת הנסיעה שלך')
+    else:
+        PushNotificationsHandler.send_push_notification(driver[token], passenger[user_name]+' מצטרף אליך סופית, אל תשכח אותו כשאתה יוצא')
 
 # relevant until we have push notification - for update ride status in client side
 def get_user_ride_requests(type_of_user, user_id):
