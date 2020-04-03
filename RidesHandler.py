@@ -213,11 +213,10 @@ def accept_ride(type_of_user, ride_id):
 
         if ride_to_accept is not None:
             logger.info('Trying to accept ride request from DB')
-
             firebase_db.child(rides_collection).child(ride_id).child(type_of_user).child(accepted).set(True)
+            logger.info('Ride accepted successfully by %s', type_of_user)
+            send_push_notification_to_other_user()
 
-            logger.info('Ride accepted successfully')
-            # send push notification to other user
             return success
         else:
             logger.error("Ride doesn't exists in DB")
@@ -228,6 +227,10 @@ def accept_ride(type_of_user, ride_id):
         logger.warning("Ride wasn't accepted")
 
         return failure
+
+
+def send_push_notification_to_other_user():
+    pass
 
 
 # relevant until we have push notification - for update ride status in client side
