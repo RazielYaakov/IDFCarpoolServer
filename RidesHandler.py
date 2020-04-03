@@ -23,6 +23,7 @@ def get_all_rides_from_db():
 
 
 def parse_time_to_hour_minutes_seconds(ride_time):
+    logger.info('Trying to parse time to H:M format')
     parsed_ride_hour = arrow.get(ride_time).to(time_zone).datetime.hour
     parsed_ride_minutes = arrow.get(ride_time).to(time_zone).datetime.minute
 
