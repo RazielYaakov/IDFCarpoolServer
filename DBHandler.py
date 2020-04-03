@@ -6,7 +6,7 @@ import log
 
 logger = log.setup_custom_logger()
 
-logger.info('Initialize connection with firebase-DB')
+logger.info('Initialize connection with Firebase-DB')
 c = {
     "type": "service_account",
     "project_id": "carpool-832da",
