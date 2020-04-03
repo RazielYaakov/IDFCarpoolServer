@@ -234,7 +234,7 @@ def accept_ride(type_of_user, ride_id):
 def get_user_ride_requests(type_of_user, user_id):
     all_rides = get_all_rides_from_db()
     user_rides = []
-    
+
     if all_rides is not None:
         for ride in all_rides:
             if ride[values_position].get(type_of_user).get(phone_number) == user_id:
