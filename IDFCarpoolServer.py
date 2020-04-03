@@ -17,7 +17,7 @@ def create_json_object_from_request_args(request_args):
 
 @app.route('/')
 def hello():
-    return 'Raziel Yaakov - test'
+    return 'Raziel Yaakov Hamalic'
 
 
 # completed
