@@ -113,3 +113,4 @@ if __name__ == "__main__":
     app.run(host='0.0.0.0')
     logger.info('Server has reloaded')
     logger.info('Queen Dana Koren')
+    app.run(host='0.0.0.0')
