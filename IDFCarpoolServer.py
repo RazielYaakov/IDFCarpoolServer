@@ -1,3 +1,5 @@
+import json
+
 from flask import Flask, request
 
 import RidesHandler
@@ -51,7 +53,7 @@ def find_ride():
     logger.info('Get request to find ride: ' + request.url)
     find_ride_request = create_json_object_from_request_args(request.args)
 
-    return str(RidesHandler.find_ride(find_ride_request))
+    return json.dumps(RidesHandler.find_ride(find_ride_request))
 
 
 @app.route('/showmyriderequests')
@@ -60,7 +62,7 @@ def show_user_ride_requests():
     type_of_user = request.args.get(user_type)
     user_id = request.args.get(phone_number)
 
-    return str(RidesHandler.get_user_ride_requests(type_of_user, user_id))
+    return json.dumps(RidesHandler.get_user_ride_requests(type_of_user, user_id))
 
 
 @app.route('/cancelride', methods=['POST'])
@@ -108,8 +110,8 @@ def add_junk_users(i):
 
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0')
     logger.info('Server has reloaded')
     logger.info('Queen Dana Koren')
+    app.run(host='0.0.0.0')
 
 
