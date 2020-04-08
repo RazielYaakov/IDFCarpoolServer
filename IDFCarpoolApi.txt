@@ -31,7 +31,8 @@
     "passenger": {
       "userType": string,
       "name": string,
-      "phoneNumber": string
+      "phoneNumber": string,
+      "token": string,
     }
   },
 
@@ -44,6 +45,7 @@
         "leavingBaseTime": Time
         "baseLocation": string,
         "homeLocation": string,
+        "token": string,
       }
     },
 

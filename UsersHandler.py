@@ -36,10 +36,12 @@ def login(user_data):
     logger.info('Checking user')
 
     try:
-        if get_user_from_db(user_data.get(phone_number)) is not None:
+        logged_in_user = get_user_from_db(user_data.get(phone_number))
+
+        if logged_in_user is not None:
             logger.info("Returning user's login succeeded")
 
-            return success
+            return logged_in_user
         else:
             logger.info("User doesn't exists in DB")
             logger.info('Trying to insert new user to DB')

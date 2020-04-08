@@ -46,7 +46,7 @@ def is_matching_hours(driver_time, ride_time):
 
 
 def is_driver_is_optional(driver, ride_request):
-    if ride_request.get(home_to_base):
+    if ride_request.get(home_to_base) == 'true':
         return driver.get(home_location) == ride_request.get(source) and \
                driver.get(base_location) == ride_request.get(destination) and \
                is_matching_hours(driver.get(leaving_home_time), ride_request.get(date))
@@ -242,6 +242,11 @@ def get_user_ride_requests(type_of_user, user_id):
         for ride in all_rides:
             if ride[values_position].get(type_of_user).get(phone_number) == user_id:
                 user_rides.append(ride)
+
+    if len(user_rides) == 0:
+        logger.info('User has no rides')
+    else:
+        logger.info('Returning %s rides', len(user_rides))
 
     return user_rides
 

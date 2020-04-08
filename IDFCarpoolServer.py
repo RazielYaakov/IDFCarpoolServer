@@ -26,7 +26,7 @@ def login_user():
     logger.info('Get request to login: ' + request.url)
     user_data = create_json_object_from_request_args(request.args)
 
-    return UsersHandler.login(user_data)
+    return json.dumps(UsersHandler.login(user_data))
 
 
 # completed
@@ -81,32 +81,6 @@ def accept_ride():
     ride_id = request.args.get(ride_ID)
 
     return RidesHandler.accept_ride(type_of_user, ride_id)
-
-
-def add_junk_users(i):
-    hour = 7
-    minutes = 00
-
-    driver = {
-        "userType": "driver",
-        "name": "razi",
-        "phoneNumber": str(i),
-        "leavingHomeTime": str(hour) + ":" + str(minutes),
-        "leavingBaseTime": str(hour + 6) + ":" + str(minutes),
-        "baseLocation": "a",
-        "homeLocation": "b",
-    }
-
-    for x in range(i, i + 5):
-        UsersHandler.login(driver)
-        driver["phoneNumber"] = str(x)
-
-    driver["baseLocation"] = "b"
-    driver["homeLocation"] = "a"
-
-    for x in range(i + 5, i + 10):
-        UsersHandler.login(driver)
-        driver["phoneNumber"] = str(x)
 
 
 if __name__ == "__main__":
