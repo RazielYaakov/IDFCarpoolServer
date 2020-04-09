@@ -70,19 +70,37 @@ def passenger_accept_offer():
 # completed
 @app.route('/driverrequestaccept', methods=['POST'])
 def driver_accept_request():
-    logger.info('Get request to accept ride requests: ' + request.url)
+    logger.info('Get request to accept ride requests from driver: ' + request.url)
     accepted_request_id = request.args.get(request_id)
 
     return RidesHandler.driver_request_accept(accepted_request_id)
 
 
 # completed
+@app.route('/ridehandshake', methods=['POST'])
+def ride_handshake():
+    logger.info('Get request to ride handshake from passenger: ' + request.url)
+    accepted_request_id = request.args.get(request_id)
+
+    return RidesHandler.passenger_handshake(accepted_request_id)
+
+
+# completed
 @app.route('/cancelrequest', methods=['POST'])
 def cancel_request():
-    logger.info('Get request to accept ride requests: ' + request.url)
+    logger.info('Get request to cancel ride requests: ' + request.url)
     canceled_request_id = request.args.get(request_id)
 
     return RidesHandler.cancel_ride_request(canceled_request_id)
+
+
+# completed
+@app.route('/canceloffer', methods=['POST'])
+def cancel_offer():
+    logger.info('Get request to cancel ride offer: ' + request.url)
+    canceled_offer_id = request.args.get(offer_id)
+
+    return RidesHandler.cancel_ride_offer(canceled_offer_id)
 
 
 # completed
@@ -103,45 +121,9 @@ def delete_user():
     return UsersHandler.delete_user(id_of_user_to_delete)
 
 
-@app.route('/cancelride', methods=['POST'])
-def cancel_ride():
-    logger.info('Get request to cancel ride requests: ' + request.url)
-    type_of_user = request.args.get(user_type)
-    ride_id = request.args.get(ride_ID)
-
-    return RidesHandler.cancel_ride(type_of_user, ride_id)
-
-
-
-
-def add_junk_users(i):
-    hour = 7
-    minutes = 00
-
-    driver = {
-        "userType": "driver",
-        "name": "razi",
-        "phoneNumber": str(i),
-        "leavingHomeTime": str(hour) + ":" + str(minutes),
-        "leavingBaseTime": str(hour + 6) + ":" + str(minutes),
-        "baseLocation": "a",
-        "homeLocation": "b",
-    }
-
-    for x in range(i, i + 5):
-        UsersHandler.login(driver)
-        driver["phoneNumber"] = str(x)
-
-    driver["baseLocation"] = "b"
-    driver["homeLocation"] = "a"
-
-    for x in range(i + 5, i + 10):
-        UsersHandler.login(driver)
-        driver["phoneNumber"] = str(x)
-
-
 logger.info('Server has reloaded')
 logger.info('Queen Dana Koren')
+logger.info('Razi HaMalic')
 
 
 if __name__ == "__main__":
