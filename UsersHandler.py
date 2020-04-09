@@ -8,45 +8,30 @@ logger = log.setup_custom_logger()
 firebase_db = DBHandler.get_firebase_db_ref()
 
 
-def get_all_users_from_db():
-    logger.info('Trying to get all users from DB')
-    all_users = firebase_db.child(users_collection).get()
-
-    if all_users is not None:
-        return all_users.items()
-
-    return None
-
-
-def get_user_from_db(user_id):
-    logger.info('Check if user with phoneNumber=%s exists in DB', user_id)
-    all_users = get_all_users_from_db()
-
-    if all_users is not None:
-        for user in all_users:
-            if user[values_position].get(phone_number) == user_id:
-                logger.info('User exists in DB')
-                return user
-
-    return None
+def get_user_from_db(user_phone_number):
+    logger.info('Trying to get user with phoneNumber=%s', user_phone_number)
+    return firebase_db.child(users_collection).child(user_phone_number).get()
 
 
 def login(user_data):
-    logger.info('User with phoneNumber=%s trying to login', user_data.get(phone_number))
-    logger.info('Checking user')
+    logger.info('User with phoneNumber=%s trying to login', user_data[phone_number])
 
     try:
-        if get_user_from_db(user_data.get(phone_number)) is not None:
-            logger.info("Returning user's login succeeded")
+        logger.info('Trying to get user from DB')
+        user = get_user_from_db(user_data[phone_number])
+
+        if user is None:
+            logger.info('''User doesn't exists in DB''')
+            logger.info('Trying to create new user')
+
+            firebase_db.child(users_collection).child(user_data[phone_number]).set(build_new_user_object(user_data))
+            logger.info('Creation completed successfully')
+            logger.info('Returning success')
 
             return success
         else:
-            logger.info("User doesn't exists in DB")
-            logger.info('Trying to insert new user to DB')
-
-            firebase_db.child(users_collection).push(user_data)
-
-            logger.info('User creation completed successfully')
+            logger.info("User exists in DB")
+            logger.info('Returning success')
 
             return success
     except RequestException as err:
@@ -54,6 +39,14 @@ def login(user_data):
         logger.warning("User login failed")
 
         return failure
+
+
+def build_new_user_object(user_data):
+    return {
+        user_name: user_data[user_name],
+        phone_number: user_data[phone_number],
+        token: user_data[token],
+    }
 
 
 def update_user(user_updated_data):
@@ -101,3 +94,26 @@ def delete_user(user_id):
         logger.warning("User wasn't deleted")
 
         return failure
+
+
+def add_ride_options_to_user(passenger, optional_offers):
+    logger.info('Trying to get user all older offers from DB')
+    passenger_offers = firebase_db.child(users_collection).child(passenger[phone_number]).child(rides).child(
+        options).get()
+
+    logger.info('Trying to insert all new optional offers and validating they are not exists already')
+
+    for offer in optional_offers:
+        if not user_already_has_this_offer(offer[key_position], passenger_offers):
+            firebase_db.child(users_collection).child(passenger[phone_number]).child(rides).child(options).push(offer)
+
+    logger.info('New offers insert successfully')
+
+
+def user_already_has_this_offer(new_offer_id, passenger_offers):
+    if passenger_offers is not None:
+        for offer in passenger_offers:
+            if passenger_offers[offer][key_position] == new_offer_id:
+                return True
+
+    return False

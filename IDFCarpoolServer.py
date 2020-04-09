@@ -29,6 +29,36 @@ def login_user():
     return UsersHandler.login(user_data)
 
 
+#completed
+@app.route('/newrideoffer', methods=['POST'])
+def new_ride():
+    logger.info('Get request to add new ride: ' + request.url)
+    add_ride_request = create_json_object_from_request_args(request.args)
+
+    return RidesHandler.add_ride_offer(add_ride_request)
+
+
+# completed
+@app.route('/findride', methods=['POST'])
+def find_ride():
+    logger.info('Get request to find ride: ' + request.url)
+    find_ride_request = create_json_object_from_request_args(request.args)
+
+    return json.dumps(RidesHandler.find_ride(find_ride_request))
+
+
+@app.route('/showmyrides')
+def show_user_ride_requests():
+    logger.info('Get request to show user rides: ' + request.url)
+    user_phone_number = request.args.get(phone_number)
+
+    rides = RidesHandler.get_user_rides(user_phone_number)
+
+    logger.info(rides)
+
+    return json.dumps(rides)
+
+
 # completed
 @app.route('/updateuser', methods=['POST'])
 def update_user():
@@ -45,24 +75,6 @@ def delete_user():
     id_of_user_to_delete = request.args.get(phone_number)
 
     return UsersHandler.delete_user(id_of_user_to_delete)
-
-
-# completed
-@app.route('/findride', methods=['POST'])
-def find_ride():
-    logger.info('Get request to find ride: ' + request.url)
-    find_ride_request = create_json_object_from_request_args(request.args)
-
-    return json.dumps(RidesHandler.find_ride(find_ride_request))
-
-
-@app.route('/showmyriderequests')
-def show_user_ride_requests():
-    logger.info('Get request to show user ride requests: ' + request.url)
-    type_of_user = request.args.get(user_type)
-    user_id = request.args.get(phone_number)
-
-    return json.dumps(RidesHandler.get_user_ride_requests(type_of_user, user_id))
 
 
 @app.route('/cancelride', methods=['POST'])
