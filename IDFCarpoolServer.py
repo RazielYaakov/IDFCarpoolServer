@@ -5,7 +5,7 @@ from flask import Flask, request
 import RidesHandler
 import UsersHandler
 import log
-from consts import phone_number, ride_ID, user_type
+from consts import phone_number, ride_ID, user_type, offer_id, request_id
 
 app = Flask(__name__)
 logger = log.setup_custom_logger()
@@ -47,16 +47,42 @@ def find_ride():
     return json.dumps(RidesHandler.find_ride(find_ride_request))
 
 
+# completed
 @app.route('/showmyrides')
 def show_user_ride_requests():
     logger.info('Get request to show user rides: ' + request.url)
     user_phone_number = request.args.get(phone_number)
-
     rides = RidesHandler.get_user_rides(user_phone_number)
 
-    logger.info(rides)
-
     return json.dumps(rides)
+
+
+# completed
+@app.route('/passengerofferaccept', methods=['POST'])
+def passenger_accept_offer():
+    logger.info('Get request to accept ride offer: ' + request.url)
+    accepted_offer_id = request.args.get(offer_id)
+    passenger_phone_number = request.args.get(phone_number)
+
+    return RidesHandler.passenger_offer_accept(accepted_offer_id, passenger_phone_number)
+
+
+# completed
+@app.route('/driverrequestaccept', methods=['POST'])
+def driver_accept_request():
+    logger.info('Get request to accept ride requests: ' + request.url)
+    accepted_request_id = request.args.get(request_id)
+
+    return RidesHandler.driver_request_accept(accepted_request_id)
+
+
+# completed
+@app.route('/cancelrequest', methods=['POST'])
+def cancel_request():
+    logger.info('Get request to accept ride requests: ' + request.url)
+    canceled_request_id = request.args.get(request_id)
+
+    return RidesHandler.cancel_ride_request(canceled_request_id)
 
 
 # completed
@@ -86,13 +112,6 @@ def cancel_ride():
     return RidesHandler.cancel_ride(type_of_user, ride_id)
 
 
-@app.route('/acceptride', methods=['POST'])
-def accept_ride():
-    logger.info('Get request to accept ride requests: ' + request.url)
-    type_of_user = request.args.get(user_type)
-    ride_id = request.args.get(ride_ID)
-
-    return RidesHandler.accept_ride(type_of_user, ride_id)
 
 
 def add_junk_users(i):
