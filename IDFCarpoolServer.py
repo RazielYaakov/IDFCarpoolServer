@@ -17,7 +17,7 @@ def create_json_object_from_request_args(request_args):
 
 @app.route('/')
 def hello():
-    return 'Raziel Yaakov'
+    return 'Raziel Yaakov Hamalic'
 
 
 # completed
@@ -26,7 +26,37 @@ def login_user():
     logger.info('Get request to login: ' + request.url)
     user_data = create_json_object_from_request_args(request.args)
 
-    return json.dumps(UsersHandler.login(user_data))
+    return UsersHandler.login(user_data)
+
+
+#completed
+@app.route('/newrideoffer', methods=['POST'])
+def new_ride():
+    logger.info('Get request to add new ride: ' + request.url)
+    add_ride_request = create_json_object_from_request_args(request.args)
+
+    return RidesHandler.add_ride_offer(add_ride_request)
+
+
+# completed
+@app.route('/findride', methods=['POST'])
+def find_ride():
+    logger.info('Get request to find ride: ' + request.url)
+    find_ride_request = create_json_object_from_request_args(request.args)
+
+    return json.dumps(RidesHandler.find_ride(find_ride_request))
+
+
+@app.route('/showmyrides')
+def show_user_ride_requests():
+    logger.info('Get request to show user rides: ' + request.url)
+    user_phone_number = request.args.get(phone_number)
+
+    rides = RidesHandler.get_user_rides(user_phone_number)
+
+    logger.info(rides)
+
+    return json.dumps(rides)
 
 
 # completed
@@ -47,24 +77,6 @@ def delete_user():
     return UsersHandler.delete_user(id_of_user_to_delete)
 
 
-# completed
-@app.route('/findride', methods=['POST'])
-def find_ride():
-    logger.info('Get request to find ride: ' + request.url)
-    find_ride_request = create_json_object_from_request_args(request.args)
-
-    return json.dumps(RidesHandler.find_ride(find_ride_request))
-
-
-@app.route('/showmyriderequests')
-def show_user_ride_requests():
-    logger.info('Get request to show user ride requests: ' + request.url)
-    type_of_user = request.args.get(user_type)
-    user_id = request.args.get(phone_number)
-
-    return json.dumps(RidesHandler.get_user_ride_requests(type_of_user, user_id))
-
-
 @app.route('/cancelride', methods=['POST'])
 def cancel_ride():
     logger.info('Get request to cancel ride requests: ' + request.url)
@@ -83,7 +95,35 @@ def accept_ride():
     return RidesHandler.accept_ride(type_of_user, ride_id)
 
 
+def add_junk_users(i):
+    hour = 7
+    minutes = 00
+
+    driver = {
+        "userType": "driver",
+        "name": "razi",
+        "phoneNumber": str(i),
+        "leavingHomeTime": str(hour) + ":" + str(minutes),
+        "leavingBaseTime": str(hour + 6) + ":" + str(minutes),
+        "baseLocation": "a",
+        "homeLocation": "b",
+    }
+
+    for x in range(i, i + 5):
+        UsersHandler.login(driver)
+        driver["phoneNumber"] = str(x)
+
+    driver["baseLocation"] = "b"
+    driver["homeLocation"] = "a"
+
+    for x in range(i + 5, i + 10):
+        UsersHandler.login(driver)
+        driver["phoneNumber"] = str(x)
+
+
+logger.info('Server has reloaded')
+logger.info('Queen Dana Koren')
+
+
 if __name__ == "__main__":
     app.run(host='0.0.0.0')
-    logger.info('Server has reloaded')
-    logger.info('Queen Dana Koren')
