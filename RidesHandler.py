@@ -78,7 +78,6 @@ def is_same_offer(offer_from_db, new_ride_offer):
 
 def find_ride(ride_request):
     passenger = UsersHandler.get_user_from_db(ride_request[phone_number])
-    optional_offers = []
 
     if passenger is None:
         logger.error('''User doesn't exists''')
@@ -207,9 +206,6 @@ def get_requests_of_type(pointers):
     return requests
 
 
-# -----------------------------------------------done until here----------------------------------------------------
-
-
 def passenger_offer_accept(accepted_offer_id, passenger_phone_number):
     logger.info('Passenger trying to accept ride offer')
     passenger = UsersHandler.get_user_from_db(passenger_phone_number)
@@ -318,8 +314,29 @@ def get_request_from_db(wanted_request_id):
     return None
 
 
+def passenger_handshake(accepted_request_id):
+    logger.info('Passenger trying to make handshake to deal request %s', accepted_request_id)
+    request = get_request_from_db(accepted_request_id)
+
+    try:
+        if request is None:
+            logger.error('''Request %s doesn't exists in DB''', accepted_request_id)
+            return failure
+
+        firebase_db.child(rides_collection).child(requests_collection).child(accepted_request_id).child(accepted).set(
+            True)
+        logger.info('Handshake completed successfully')
+
+        return success
+    except RequestException as err:
+        logger.error(str(err))
+        logger.warning("Handshake wasn't happen")
+
+        return failure
+
+
 def cancel_ride_request(request_to_cancel_id):
-    logger.info('Trying to cancel ride request')
+    logger.info('Trying to cancel ride request %s', request_to_cancel_id)
     request_to_cancel = get_request_from_db(request_to_cancel_id)
 
     try:
@@ -327,7 +344,9 @@ def cancel_ride_request(request_to_cancel_id):
             return failure
 
         delete_request_from_users(request_to_cancel, request_to_cancel_id)
-    #     delete request from request collection
+        delete_request_from_requests_collection(request_to_cancel_id)
+
+        return success
     except RequestException as err:
         logger.error(str(err))
         logger.warning("Request wasn't deleted")
@@ -341,134 +360,90 @@ def delete_request_from_users(request_to_cancel, request_to_cancel_id):
     driver_phone_number = request_to_cancel[driver_type][phone_number]
 
     try:
-        firebase_db.child(users_collection).child(passenger_phone_number).child(rides).child(
-            requests_collection).child(as_passenger).order_by_child(request_id).equal_to(request_to_cancel_id).delete()
-        firebase_db.child(users_collection).child(driver_phone_number).child(rides).child(
-            requests_collection).child(as_driver).order_by_child(request_id).equal_to(request_to_cancel_id).delete()
+        delete_request_from_user(passenger_phone_number, request_to_cancel_id, is_passenger=True)
+        delete_request_from_user(driver_phone_number, request_to_cancel_id, is_passenger=False)
 
-        logger.info("Delete completed successfully")
+        logger.info("Delete from user rides completed successfully")
     except RequestException as err:
         logger.error(str(err))
         logger.error("Insert failed")
 
 
-def get_all_ride_offers_from_db():
-    logger.info('Trying to get all ride offers from DB')
-    all_offers = firebase_db.child(rides_collection).child(offers_collection).get()
-
-    if all_offers is not None:
-        return all_offers.items()
-
-    return None
-
-
-def get_all_rides_from_db():
-    logger.info('Trying to get all rides from DB')
-    all_rides = firebase_db.child(rides_collection).get()
-
-    if all_rides is not None:
-        return all_rides.items()
-
-    return None
-
-
-def create_optional_rides(ride_request, passenger, optional_drivers):
-    logger.info('Trying to create rides')
-    optional_rides = []
-
-    for driver in optional_drivers:
-        optional_ride = create_ride(ride_request, passenger, driver)
-
-        if optional_ride is not None:
-            optional_rides.append(optional_ride)
-
-            if len(optional_rides) == max_optional_drivers:
-                break
-
-    return optional_rides
-
-
-def create_ride(ride_request, passenger, driver):
-    logger.info('Trying to create new ride in DB')
+def delete_request_from_user(user_phone_number, request_to_cancel_id, is_passenger):
+    as_user_type = (as_driver, as_passenger)[is_passenger]
 
     try:
-        if is_ride_already_exists(ride_request, passenger, driver):
-            logger.error("Ride already exists in DB")
-            logger.error("New ride wasn't created")
+        request_do_delete = firebase_db.child(users_collection).child(user_phone_number). \
+            child(rides).child(requests_collection).child(as_user_type).order_by_child(request_id). \
+            equal_to(request_to_cancel_id).get()
 
-            return None
-        else:
-            logger.info("Ride doesn't exists in DB")
-            logger.info('Trying to insert the ride to DB')
+        for key in request_do_delete.keys():
+            firebase_db.child(users_collection).child(user_phone_number).child(rides).child(requests_collection).child(
+                as_user_type).child(key).delete()
+            logger.info('Request deleted from user %s rides', user_phone_number)
 
-            ride = {}
-            ride_id = firebase_db.child(rides_collection).push(ride)
-            ride[ride_ID] = ride_id.key
-
-            logger.info('Ride creation completed successfully')
-
-            return ride
     except RequestException as err:
         logger.error(str(err))
-        logger.warning("Ride wasn't created")
+        logger.error("Delete request from user %s failed", user_phone_number)
+
+
+def delete_request_from_requests_collection(request_to_cancel_id):
+    logger.info('Trying to delete request from requests collection')
+
+    try:
+        firebase_db.child(rides_collection).child(requests_collection).child(request_to_cancel_id).delete()
+        logger.info('Request deleted successfully from requests collection')
+    except RequestException as err:
+        logger.error(str(err))
+        logger.error("Delete request from requests collection failed")
+
+
+def cancel_ride_offer(offer_to_cancel_id):
+    logger.info('Trying to cancel ride offer %s', offer_to_cancel_id)
+    offer_to_cancel = get_offer_from_db(offer_to_cancel_id)
+
+    try:
+        if offer_to_cancel is None:
+            return failure
+
+        delete_offer_from_users(offer_to_cancel[phone_number], offer_to_cancel_id)
+        delete_offer_from_offers_collection(offer_to_cancel_id)
+
+        return success
+    except RequestException as err:
+        logger.error(str(err))
+        logger.warning("Offer wasn't deleted")
 
         return failure
 
 
-def is_ride_already_exists(ride_request, passenger, driver):
-    logger.info('Checking if ride already exists in DB')
-    all_rides = get_all_rides_from_db()
-
-    if all_rides is not None:
-        for ride in all_rides:
-            if is_same_ride_request(ride[values_position], ride_request, passenger, driver):
-                return True
-
-    return False
-
-
-def is_same_ride_request(ride, ride_request, passenger, driver):
-    return ride.get(passenger_type).get(phone_number) == passenger[values_position].get(phone_number) and \
-           ride.get(driver_type).get(phone_number) == driver[values_position].get(phone_number) and \
-           ride.get(source) == ride_request.get(source) and \
-           ride.get(destination) == ride_request.get(destination) and \
-           ride.get(date) == arrow.get(ride_request.get(date)).to(time_zone)
-
-
-def get_ride_from_db(ride_id):
-    logger.info('Trying to find ride with id=%s', ride_id)
-    all_rides = get_all_rides_from_db()
-
-    if all_rides is not None:
-        for ride in all_rides:
-            if ride[key_position] == ride_id:
-                logger.info('Ride founded')
-                return ride
-
-    return None
-
-
-def cancel_ride(type_of_user, ride_id):
-    logger.info('Trying to cancel ride request')
+def delete_offer_from_users(user_phone_number, offer_to_cancel_id):
+    logger.info('Trying to delete offer from driver %s', user_phone_number)
 
     try:
-        logger.info('Trying to get ride from DB')
-        ride_to_delete = get_ride_from_db(ride_id)
-        if ride_to_delete is not None:
-            logger.info('Trying to delete ride request from DB')
-            firebase_db.child(rides_collection).child(ride_id).delete()
-            logger.info('Ride deleted successfully')
-            send_cancel_push_notification_to_other_user(ride_to_delete, type_of_user)
-            return success
-        else:
-            logger.error("Ride doesn't exists in DB")
+        offer_do_delete = firebase_db.child(users_collection).child(user_phone_number). \
+            child(rides).child(offers_collection).order_by_child(offer_id). \
+            equal_to(offer_to_cancel_id).get()
 
-            return success
+        for key in offer_do_delete.keys():
+            firebase_db.child(users_collection).child(user_phone_number).child(rides).child(offers_collection). \
+                child(key).delete()
+            logger.info('Offer deleted from user %s rides', user_phone_number)
+
     except RequestException as err:
         logger.error(str(err))
-        logger.warning("Ride wasn't deleted")
+        logger.error("Delete request from user %s failed", user_phone_number)
 
-        return failure
+
+def delete_offer_from_offers_collection(offer_to_cancel_id):
+    logger.info('Trying to delete offer from offers collection')
+
+    try:
+        firebase_db.child(rides_collection).child(offers_collection).child(offer_to_cancel_id).delete()
+        logger.info('Offer deleted successfully from offers collection')
+    except RequestException as err:
+        logger.error(str(err))
+        logger.error("Delete offer from offer collection failed")
 
 
 def send_cancel_push_notification_to_other_user(ride, cancelled_user_type):
@@ -482,10 +457,6 @@ def send_cancel_push_notification_to_other_user(ride, cancelled_user_type):
         elif cancelled_user_type == driver_type:
             PushNotificationsHandler.send_push_notification(other_user[token], 'לא מסתדר ל' + cancelled_user[
                 user_name] + ' להסיע אותך, חפש שוב טרמפ')
-
-
-def get_other_user_type(type_of_user):
-    return (driver_type, passenger_type)[type_of_user == driver_type]
 
 
 def send_accept_push_notification_to_other_user(ride_id):
@@ -503,3 +474,7 @@ def send_accept_push_notification_to_other_user(ride_id):
     else:
         PushNotificationsHandler.send_push_notification(driver[token], passenger[
             user_name] + ' מצטרף אליך סופית, אל תשכח אותו כשאתה יוצא')
+
+
+def get_other_user_type(type_of_user):
+    return (driver_type, passenger_type)[type_of_user == driver_type]
