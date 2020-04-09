@@ -14,11 +14,11 @@ firebase_db = DBHandler.get_firebase_db_ref()
 
 def add_ride_offer(ride_offer):
     logger.info('Trying to build ride offer object')
-    offer_object = build_ride_offer_object(ride_offer)
-    driver = UsersHandler.get_user_from_db(ride_offer[driver_phone_number])
+    driver = UsersHandler.get_user_from_db(ride_offer[phone_number])
 
     try:
         if driver is not None:
+            offer_object = build_ride_offer_object(ride_offer, driver)
             if is_offer_exists_already(driver, offer_object):
                 logger.warning('Offer already exists in DB, not creating a new one')
 
@@ -41,12 +41,13 @@ def add_ride_offer(ride_offer):
         return failure
 
 
-def build_ride_offer_object(ride_offer):
+def build_ride_offer_object(ride_offer, driver):
     return {
         source: ride_offer[source],
         destination: ride_offer[destination],
         date: str(arrow.get(ride_offer[date]).to(time_zone)),
-        driver_phone_number: ride_offer[driver_phone_number],
+        phone_number: driver[phone_number],
+        user_name: driver[user_name],
         permanent_offer: ride_offer[permanent_offer]
     }
 
@@ -68,7 +69,7 @@ def is_offer_exists_already(driver, offer_object):
 
 
 def is_same_offer(offer_from_db, new_ride_offer):
-    return offer_from_db[driver_phone_number] == new_ride_offer[driver_phone_number] and \
+    return offer_from_db[phone_number] == new_ride_offer[phone_number] and \
            offer_from_db[source] == new_ride_offer[source] and \
            offer_from_db[destination] == new_ride_offer[destination] and \
            offer_from_db[permanent_offer] == new_ride_offer[permanent_offer] and \
@@ -109,7 +110,7 @@ def get_optional_offers(ride_request):
 
 
 def is_optional_offer(optional_offer, ride_request):
-    return optional_offer[driver_phone_number] != ride_request[phone_number] and \
+    return optional_offer[phone_number] != ride_request[phone_number] and \
            optional_offer[destination] == ride_request[destination] and \
            is_matching_hours(optional_offer[date], ride_request[date], optional_offer[permanent_offer])
 
@@ -166,51 +167,189 @@ def get_user_rides_from_pointers(user_rides_pointers):
     user_offers = user_rides_pointers.get(offers_collection)
     user_requests = user_rides_pointers.get(requests_collection)
 
-    return {offers_collection: get_objects_from_pointers(user_offers, offers_collection),
-            requests_collection: get_objects_from_pointers(user_requests, requests_collection)}
+    return {offers_collection: get_offers_from_pointers(user_offers),
+            requests_collection: get_requests_from_pointers(user_requests)}
 
 
-def get_objects_from_pointers(pointers, collection_name):
-    objects = []
-    id_name = (offer_id, request_id)[collection_name == requests_collection]
+def get_offers_from_pointers(pointers):
+    offers = []
 
     if pointers is not None:
         for pointer in pointers:
-            objects.append(firebase_db.child(rides_collection).child(collection_name).
-                           child(pointers[pointer][id_name]).get())
+            offers.append({offer_id: pointers[pointer][offer_id],
+                           offer_data: firebase_db.child(rides_collection).child(offers_collection).
+                          child(pointers[pointer][offer_id]).get()})
 
-    return objects
+    return offers
 
 
-def accept_ride(type_of_user, ride_id):
-    logger.info('Trying to accept ride request')
+def get_requests_from_pointers(pointers):
+    requests = []
+
+    if pointers is not None:
+        requests_as_driver = get_requests_of_type(pointers.get(as_driver))
+        requests_as_passenger = get_requests_of_type(pointers.get(as_passenger))
+
+        requests = {as_driver: requests_as_driver, as_passenger: requests_as_passenger}
+
+    return requests
+
+
+def get_requests_of_type(pointers):
+    requests = []
+
+    if pointers is not None:
+        for pointer in pointers:
+            requests.append({request_id: pointers[pointer][request_id],
+                             request_data: firebase_db.child(rides_collection).child(requests_collection).
+                            child(pointers[pointer][request_id]).get()})
+
+    return requests
+
+
+# -----------------------------------------------done until here----------------------------------------------------
+
+
+def passenger_offer_accept(accepted_offer_id, passenger_phone_number):
+    logger.info('Passenger trying to accept ride offer')
+    passenger = UsersHandler.get_user_from_db(passenger_phone_number)
 
     try:
-        logger.info('Trying to get ride from DB')
-        ride_to_accept = get_ride_from_db(ride_id)
+        if passenger is not None:
+            accepted_offer = get_offer_from_db(accepted_offer_id)
 
-        if ride_to_accept is not None:
-            logger.info('Trying to accept ride request from DB')
-            if ride_to_accept[1][driver_type][accepted] == True and ride_to_accept[1][passenger_type][
-                accepted] == True and type_of_user == passenger_type:
-                firebase_db.child(rides_collection).child(ride_id).child(accepted).set(True)
-                logger.info('Ride accepted successfully by both passenger and driver')
+            if accepted_offer is not None:
+                logger.info('Trying to create ride request')
+                new_request = build_ride_request_object(accepted_offer, passenger)
+                new_request_response = firebase_db.child(rides_collection).child(requests_collection).push(new_request)
+                add_request_to_users_rides(passenger_phone_number, accepted_offer[phone_number],
+                                           new_request_response.key)
+
+                return success
             else:
-                firebase_db.child(rides_collection).child(ride_id).child(type_of_user).child(accepted).set(True)
-                logger.info('Ride accepted successfully by %s', type_of_user)
+                logger.error('''Offer with id=%s doesn't exists''', accepted_offer_id)
+                return failure
+        else:
+            logger.error('''User with phoneNumber=%s doesn't exists''', passenger_phone_number)
+            return failure
+    except RequestException as err:
+        logger.error(str(err))
+        logger.warning("Offer wasn't accepted")
 
-            send_accept_push_notification_to_other_user(ride_id)
+        return failure
+
+
+def get_offer_from_db(wanted_offer_id):
+    logger.info('Trying to get offer from DB')
+    wanted_offer = firebase_db.child(rides_collection).child(offers_collection).child(wanted_offer_id).get()
+
+    if wanted_offer is not None:
+        return wanted_offer
+
+    logger.error('''Offer doesn't exists in DB''')
+    return None
+
+
+def add_request_to_users_rides(passenger_phone_number, driver_phone_number, new_request_id):
+    logger.info('Trying to insert the request id to passenger and driver rides')
+
+    try:
+        firebase_db.child(users_collection).child(passenger_phone_number).child(rides).child(
+            requests_collection).child(as_passenger).push({request_id: new_request_id})
+        firebase_db.child(users_collection).child(driver_phone_number).child(rides).child(
+            requests_collection).child(as_driver).push({request_id: new_request_id})
+        logger.info("Insert completed successfully")
+    except RequestException as err:
+        logger.error(str(err))
+        logger.error("Insert failed")
+
+
+def build_ride_request_object(accepted_offer, passenger):
+    return {
+        source: accepted_offer[source],
+        destination: accepted_offer[destination],
+        date: str(arrow.get(accepted_offer[date]).to(time_zone)),
+        driver_type: {
+            phone_number: accepted_offer[phone_number],
+            user_name: accepted_offer[user_name],
+            accepted: False
+        },
+        passenger_type: {
+            phone_number: passenger[phone_number],
+            user_name: passenger[user_name],
+            accepted: True
+        },
+        accepted: False
+    }
+
+
+def driver_request_accept(accepted_request_id):
+    logger.info('Driver trying to accept ride request')
+    accepted_request = get_request_from_db(accepted_request_id)
+
+    try:
+        if accepted_request is not None:
+            logger.info('''Trying to chance driver's request accept status in DB to True''')
+            firebase_db.child(rides_collection).child(requests_collection).child(accepted_request_id).child(
+                driver_type).child(accepted).set(True)
+
+            logger.info('Driver accept status changed successfully')
 
             return success
         else:
-            logger.error("Ride doesn't exists in DB")
+            logger.error('''Request with id=%s doesn't exists''', accepted_request_id)
 
             return failure
     except RequestException as err:
         logger.error(str(err))
-        logger.warning("Ride wasn't accepted")
+        logger.warning("Request wasn't accepted")
 
         return failure
+
+
+def get_request_from_db(wanted_request_id):
+    logger.info('Trying to get request from DB')
+    wanted_request = firebase_db.child(rides_collection).child(requests_collection).child(wanted_request_id).get()
+
+    if wanted_request is not None:
+        return wanted_request
+
+    logger.error('''Request doesn't exists in DB''')
+    return None
+
+
+def cancel_ride_request(request_to_cancel_id):
+    logger.info('Trying to cancel ride request')
+    request_to_cancel = get_request_from_db(request_to_cancel_id)
+
+    try:
+        if request_to_cancel is None:
+            return failure
+
+        delete_request_from_users(request_to_cancel, request_to_cancel_id)
+    #     delete request from request collection
+    except RequestException as err:
+        logger.error(str(err))
+        logger.warning("Request wasn't deleted")
+
+        return failure
+
+
+def delete_request_from_users(request_to_cancel, request_to_cancel_id):
+    logger.info('Trying to delete requests from users')
+    passenger_phone_number = request_to_cancel[passenger_type][phone_number]
+    driver_phone_number = request_to_cancel[driver_type][phone_number]
+
+    try:
+        firebase_db.child(users_collection).child(passenger_phone_number).child(rides).child(
+            requests_collection).child(as_passenger).order_by_child(request_id).equal_to(request_to_cancel_id).delete()
+        firebase_db.child(users_collection).child(driver_phone_number).child(rides).child(
+            requests_collection).child(as_driver).order_by_child(request_id).equal_to(request_to_cancel_id).delete()
+
+        logger.info("Delete completed successfully")
+    except RequestException as err:
+        logger.error(str(err))
+        logger.error("Insert failed")
 
 
 def get_all_ride_offers_from_db():
