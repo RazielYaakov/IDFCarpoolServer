@@ -103,7 +103,7 @@ def get_optional_offers(ride_request):
     if offers_from_source is not None:
         for optional_offer_id in offers_from_source:
             if is_optional_offer(offers_from_source[optional_offer_id], ride_request):
-                optional_offers.append([optional_offer_id, offers_from_source[optional_offer_id]])
+                optional_offers.append({offer_id: optional_offer_id, offer_data: offers_from_source[optional_offer_id]})
 
     return optional_offers
 
@@ -500,7 +500,7 @@ def send_push_notification_about_ride_canceled(request_to_cancel, canceler_phone
 
 
 def get_cancel_message(request_to_cancel):
-    cancel_message = 'שים לב, הטרמפ שלך מ' + request_to_cancel[source] + ' ל' + request_to_cancel[destination] +\
-        ' בוטל'
+    cancel_message = 'שים לב, הטרמפ שלך מ' + request_to_cancel[source] + ' ל' + request_to_cancel[destination] + \
+                     ' בוטל'
 
     return cancel_message
