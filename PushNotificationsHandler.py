@@ -10,6 +10,7 @@ import log
 
 logger = log.setup_custom_logger()
 
+
 # Basic arguments. You should extend this function with the push features you
 # want to use, or simply pass in a `PushMessage` object.
 def send_push_notification(token, message, extra=None):
