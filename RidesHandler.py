@@ -73,7 +73,7 @@ def is_same_offer(offer_from_db, new_ride_offer):
            offer_from_db[source] == new_ride_offer[source] and \
            offer_from_db[destination] == new_ride_offer[destination] and \
            offer_from_db[permanent_offer] == new_ride_offer[permanent_offer] and \
-           offer_from_db[date] == new_ride_offer[date]
+           offer_from_db[date] == str(arrow.get(new_ride_offer[date]).to(time_zone))
 
 
 def find_ride(ride_request):
@@ -111,7 +111,8 @@ def get_optional_offers(ride_request):
 def is_optional_offer(optional_offer, ride_request):
     return optional_offer[phone_number] != ride_request[phone_number] and \
            optional_offer[destination] == ride_request[destination] and \
-           is_matching_hours(optional_offer[date], ride_request[date], optional_offer[permanent_offer])
+           is_matching_hours(optional_offer[date], str(arrow.get(ride_request[date]).to(time_zone)),
+                             optional_offer[permanent_offer])
 
 
 def is_matching_hours(offer_time, requested_time, is_permanent_offer):
