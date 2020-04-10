@@ -90,8 +90,9 @@ def ride_handshake():
 def cancel_request():
     logger.info('Get request to cancel ride requests: ' + request.url)
     canceled_request_id = request.args.get(request_id)
+    user_phone_number = request.args.get(phone_number)
 
-    return RidesHandler.cancel_ride_request(canceled_request_id)
+    return RidesHandler.cancel_ride_request(canceled_request_id, user_phone_number)
 
 
 # completed

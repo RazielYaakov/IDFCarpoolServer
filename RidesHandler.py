@@ -224,6 +224,9 @@ def passenger_offer_accept(accepted_offer_id, passenger_phone_number):
                 new_request_response = firebase_db.child(rides_collection).child(requests_collection).push(new_request)
                 add_request_to_users_rides(passenger_phone_number, accepted_offer[phone_number],
                                            new_request_response.key)
+                logger.info('Sending push notification to driver about new ride request')
+                send_push_notification_new_ride_request_to_driver(passenger, accepted_offer[phone_number])
+                logger.info('Returning success')
 
                 return success
             else:
@@ -292,8 +295,11 @@ def driver_request_accept(accepted_request_id):
             logger.info('''Trying to chance driver's request accept status in DB to True''')
             firebase_db.child(rides_collection).child(requests_collection).child(accepted_request_id).child(
                 driver_type).child(accepted).set(True)
-
             logger.info('Driver accept status changed successfully')
+
+            logger.info('Sending push notification to passenger about driver accepted request')
+            send_push_notification_ride_request_approved_by_driver(accepted_request[passenger_type][phone_number])
+            logger.info('Returning success')
 
             return success
         else:
@@ -331,6 +337,10 @@ def passenger_handshake(accepted_request_id):
             True)
         logger.info('Handshake completed successfully')
 
+        logger.info('Sending push notification to driver about ride approved by passenger')
+        send_push_notification_ride_approved_by_passenger(request)
+        logger.info('Returning success')
+
         return success
     except RequestException as err:
         logger.error(str(err))
@@ -339,7 +349,7 @@ def passenger_handshake(accepted_request_id):
         return failure
 
 
-def cancel_ride_request(request_to_cancel_id):
+def cancel_ride_request(request_to_cancel_id, user_phone_number):
     logger.info('Trying to cancel ride request %s', request_to_cancel_id)
     request_to_cancel = get_request_from_db(request_to_cancel_id)
 
@@ -349,6 +359,10 @@ def cancel_ride_request(request_to_cancel_id):
 
         delete_request_from_users(request_to_cancel, request_to_cancel_id)
         delete_request_from_requests_collection(request_to_cancel_id)
+
+        logger.info('Sending push notification about canceling ride')
+        send_push_notification_about_ride_canceled(request_to_cancel, user_phone_number)
+        logger.info('Return success')
 
         return success
     except RequestException as err:
@@ -450,35 +464,43 @@ def delete_offer_from_offers_collection(offer_to_cancel_id):
         logger.error("Delete offer from offer collection failed")
 
 
-def send_cancel_push_notification_to_other_user(ride, cancelled_user_type):
-    cancelled_user = ride[1][cancelled_user_type]
-    other_user = ride[1][get_other_user_type(cancelled_user_type)]
+def send_push_notification_new_ride_request_to_driver(passenger, driver_phone_number):
+    driver = UsersHandler.get_user_from_db(driver_phone_number)
 
-    if other_user[accepted]:
-        if cancelled_user_type == passenger_type:
-            PushNotificationsHandler.send_push_notification(other_user[token],
-                                                            cancelled_user[user_name] + ' ביטל את הטרמפ, אל תחכה לו')
-        elif cancelled_user_type == driver_type:
-            PushNotificationsHandler.send_push_notification(other_user[token], 'לא מסתדר ל' + cancelled_user[
-                user_name] + ' להסיע אותך, חפש שוב טרמפ')
+    if driver[token] is not None:
+        PushNotificationsHandler.send_push_notification(driver[token],
+                                                        passenger[user_name] + ' רוצה לנסוע איתך, חבל לנסוע לבד')
 
 
-def send_accept_push_notification_to_other_user(ride_id):
-    ride_accepted = firebase_db.child(rides_collection).child(ride_id).child(accepted).get()
-    driver = firebase_db.child(rides_collection).child(ride_id).child(driver_type).get()
-    passenger = firebase_db.child(rides_collection).child(ride_id).child(passenger_type).get()
+def send_push_notification_ride_request_approved_by_driver(passenger_phone_number):
+    passenger = UsersHandler.get_user_from_db(passenger_phone_number)
 
-    if ride_accepted:
-        if not driver[accepted] and passenger[accepted]:
-            PushNotificationsHandler.send_push_notification(driver[token],
-                                                            passenger[user_name] + ' רוצה לנסוע איתך, חבל לנסוע לבד')
-        elif driver[accepted] and passenger[accepted]:
-            PushNotificationsHandler.send_push_notification(passenger[token],
-                                                            driver[user_name] + ' סבבה עם בקשת הנסיעה שלך')
-    else:
-        PushNotificationsHandler.send_push_notification(driver[token], passenger[
-            user_name] + ' מצטרף אליך סופית, אל תשכח אותו כשאתה יוצא')
+    if passenger[token] is not None:
+        PushNotificationsHandler.send_push_notification(passenger[token], 'אישרו לך טרמפ, לא תכנס לבדוק מי?')
 
 
-def get_other_user_type(type_of_user):
-    return (driver_type, passenger_type)[type_of_user == driver_type]
+def send_push_notification_ride_approved_by_passenger(request):
+    driver = UsersHandler.get_user_from_db(request[driver_type][phone_number])
+
+    if driver[token] is not None:
+        PushNotificationsHandler. \
+            send_push_notification(driver[token],
+                                   request[passenger_type][user_name] + ' מצטרף אליך סופית, אל תשכח אותו כשתצא')
+
+
+def send_push_notification_about_ride_canceled(request_to_cancel, canceler_phone_number):
+    phone_number_to_send_notification = \
+        (request_to_cancel[passenger_type][phone_number], request_to_cancel[driver_type][phone_number])[
+            request_to_cancel[passenger_type][phone_number] == canceler_phone_number]
+
+    user = UsersHandler.get_user_from_db(phone_number_to_send_notification)
+
+    if user[token] is not None:
+        PushNotificationsHandler.send_push_notification(user[token], get_cancel_message(request_to_cancel))
+
+
+def get_cancel_message(request_to_cancel):
+    cancel_message = 'שים לב, הטרמפ שלך מ' + request_to_cancel[source] + ' ל' + request_to_cancel[destination] +\
+        ' בוטל'
+
+    return cancel_message
