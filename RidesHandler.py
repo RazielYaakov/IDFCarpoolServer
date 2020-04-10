@@ -163,11 +163,14 @@ def get_user_rides(user_phone_number):
 
 
 def get_user_rides_from_pointers(user_rides_pointers):
-    user_offers = user_rides_pointers.get(offers_collection)
-    user_requests = user_rides_pointers.get(requests_collection)
+    if user_rides_pointers is not None:
+        user_offers = user_rides_pointers.get(offers_collection)
+        user_requests = user_rides_pointers.get(requests_collection)
 
-    return {offers_collection: get_offers_from_pointers(user_offers),
-            requests_collection: get_requests_from_pointers(user_requests)}
+        return {offers_collection: get_offers_from_pointers(user_offers),
+                requests_collection: get_requests_from_pointers(user_requests)}
+    
+    return {}
 
 
 def get_offers_from_pointers(pointers):
