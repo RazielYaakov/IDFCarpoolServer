@@ -150,8 +150,10 @@ def get_user_rides(user_phone_number):
         if user is not None:
             logger.info('Trying to get all rides of user with id=%s', user_phone_number)
             user_rides_pointers = firebase_db.child(users_collection).child(user_phone_number).child(rides).get()
-
-            return get_user_rides_from_pointers(user_rides_pointers)
+            all_user_rides = get_user_rides_from_pointers(user_rides_pointers)
+            logger.info('Found %s rides, returning them to user', len(all_user_rides))
+            
+            return all_user_rides 
         else:
             logger.error('No user with id=%s', user_phone_number)
 
