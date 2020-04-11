@@ -467,7 +467,7 @@ def delete_offer_from_offers_collection(offer_to_cancel_id):
 def send_push_notification_new_ride_request_to_driver(passenger, driver_phone_number):
     driver = UsersHandler.get_user_from_db(driver_phone_number)
 
-    if driver[token] is not None:
+    if is_valid_token(driver):
         PushNotificationsHandler.send_push_notification(driver[token],
                                                         passenger[user_name] + ' רוצה לנסוע איתך, חבל לנסוע לבד')
 
@@ -475,14 +475,14 @@ def send_push_notification_new_ride_request_to_driver(passenger, driver_phone_nu
 def send_push_notification_ride_request_approved_by_driver(passenger_phone_number):
     passenger = UsersHandler.get_user_from_db(passenger_phone_number)
 
-    if passenger[token] is not None:
+    if is_valid_token(passenger):
         PushNotificationsHandler.send_push_notification(passenger[token], 'אישרו לך טרמפ, לא תכנס לבדוק מי?')
 
 
 def send_push_notification_ride_approved_by_passenger(request):
     driver = UsersHandler.get_user_from_db(request[driver_type][phone_number])
 
-    if driver[token] is not None:
+    if is_valid_token(driver):
         PushNotificationsHandler. \
             send_push_notification(driver[token],
                                    request[passenger_type][user_name] + ' מצטרף אליך סופית, אל תשכח אותו כשתצא')
@@ -495,7 +495,7 @@ def send_push_notification_about_ride_canceled(request_to_cancel, canceler_phone
 
     user = UsersHandler.get_user_from_db(phone_number_to_send_notification)
 
-    if user[token] is not None:
+    if is_valid_token(user):
         PushNotificationsHandler.send_push_notification(user[token], get_cancel_message(request_to_cancel))
 
 
@@ -504,3 +504,16 @@ def get_cancel_message(request_to_cancel):
                      ' בוטל'
 
     return cancel_message
+
+
+def is_valid_token(user):
+    logger.info('Validating user token')
+    user_token = user.get(token)
+
+    if user_token is not None:
+        if expo_token in user_token:
+            logger.info('User token is valid, sending notification')
+            return True
+
+    logger.info('User token is invalid, not sending notification')
+    return False
