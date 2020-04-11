@@ -71,10 +71,10 @@ def is_offer_exists_already(driver, offer_object):
 def is_same_offer(offer_from_db, new_ride_offer):
     if offer_from_db is not None:
         return offer_from_db[phone_number] == new_ride_offer[phone_number] and \
-           offer_from_db[source] == new_ride_offer[source] and \
-           offer_from_db[destination] == new_ride_offer[destination] and \
-           offer_from_db[permanent_offer] == new_ride_offer[permanent_offer] and \
-           offer_from_db[date] == str(arrow.get(new_ride_offer[date]))
+               offer_from_db[source] == new_ride_offer[source] and \
+               offer_from_db[destination] == new_ride_offer[destination] and \
+               offer_from_db[permanent_offer] == new_ride_offer[permanent_offer] and \
+               offer_from_db[date] == str(arrow.get(new_ride_offer[date]))
 
     return False
 
@@ -224,15 +224,17 @@ def passenger_offer_accept(accepted_offer_id, passenger_phone_number):
             accepted_offer = get_offer_from_db(accepted_offer_id)
 
             if accepted_offer is not None:
-                logger.info('Trying to create ride request')
-                new_request = build_ride_request_object(accepted_offer, passenger)
-                new_request_response = firebase_db.child(rides_collection).child(requests_collection).push(new_request)
-                add_request_to_users_rides(passenger_phone_number, accepted_offer[phone_number],
-                                           new_request_response.key)
-                logger.info('Sending push notification to driver about new ride request')
-                send_push_notification_new_ride_request_to_driver(passenger, accepted_offer[phone_number])
-                logger.info('Returning success')
+                if not is_passenger_accepted_this_offer_already(passenger_phone_number, accepted_offer_id):
+                    logger.info('Trying to create ride request')
+                    new_request = build_ride_request_object(accepted_offer, passenger)
+                    new_request_response = firebase_db.child(rides_collection).child(requests_collection).push(
+                        new_request)
+                    add_request_to_users_rides(passenger_phone_number, accepted_offer[phone_number],
+                                               new_request_response.key, accepted_offer_id)
+                    logger.info('Sending push notification to driver about new ride request')
+                    send_push_notification_new_ride_request_to_driver(passenger, accepted_offer[phone_number])
 
+                logger.info('Returning success')
                 return success
             else:
                 logger.error('''Offer with id=%s doesn't exists''', accepted_offer_id)
@@ -247,6 +249,20 @@ def passenger_offer_accept(accepted_offer_id, passenger_phone_number):
         return failure
 
 
+def is_passenger_accepted_this_offer_already(passenger_phone_number, accepted_offer_id):
+    logger.info('Validating if user not accept this offer already')
+    user_requests_as_passenger = firebase_db.child(users_collection).child(passenger_phone_number). \
+        child(rides_collection).child(requests_collection).child(as_passenger).get()
+
+    if user_requests_as_passenger is not None:
+        for request_as_passenger in user_requests_as_passenger:
+            if user_requests_as_passenger[request_as_passenger][offer_id] == accepted_offer_id:
+                logger.info('Offer already accepted by user!')
+                return True
+
+    return False
+
+
 def get_offer_from_db(wanted_offer_id):
     logger.info('Trying to get offer from DB')
     wanted_offer = firebase_db.child(rides_collection).child(offers_collection).child(wanted_offer_id).get()
@@ -258,12 +274,12 @@ def get_offer_from_db(wanted_offer_id):
     return None
 
 
-def add_request_to_users_rides(passenger_phone_number, driver_phone_number, new_request_id):
+def add_request_to_users_rides(passenger_phone_number, driver_phone_number, new_request_id, accepted_offer_id):
     logger.info('Trying to insert the request id to passenger and driver rides')
 
     try:
         firebase_db.child(users_collection).child(passenger_phone_number).child(rides).child(
-            requests_collection).child(as_passenger).push({request_id: new_request_id})
+            requests_collection).child(as_passenger).push({request_id: new_request_id, offer_id: accepted_offer_id})
         firebase_db.child(users_collection).child(driver_phone_number).child(rides).child(
             requests_collection).child(as_driver).push({request_id: new_request_id})
         logger.info("Insert completed successfully")
