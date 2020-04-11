@@ -69,11 +69,14 @@ def is_offer_exists_already(driver, offer_object):
 
 
 def is_same_offer(offer_from_db, new_ride_offer):
-    return offer_from_db[phone_number] == new_ride_offer[phone_number] and \
+    if offer_from_db is not None:
+        return offer_from_db[phone_number] == new_ride_offer[phone_number] and \
            offer_from_db[source] == new_ride_offer[source] and \
            offer_from_db[destination] == new_ride_offer[destination] and \
            offer_from_db[permanent_offer] == new_ride_offer[permanent_offer] and \
            offer_from_db[date] == str(arrow.get(new_ride_offer[date]))
+
+    return False
 
 
 def find_ride(ride_request):
@@ -150,8 +153,10 @@ def get_user_rides(user_phone_number):
         if user is not None:
             logger.info('Trying to get all rides of user with id=%s', user_phone_number)
             user_rides_pointers = firebase_db.child(users_collection).child(user_phone_number).child(rides).get()
+            all_user_rides = get_user_rides_from_pointers(user_rides_pointers)
+            logger.info('Found %s rides, returning them to user', len(all_user_rides))
 
-            return get_user_rides_from_pointers(user_rides_pointers)
+            return all_user_rides
         else:
             logger.error('No user with id=%s', user_phone_number)
 
