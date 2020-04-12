@@ -117,3 +117,12 @@ def user_already_has_this_offer(new_offer_id, passenger_offers):
                 return True
 
     return False
+
+
+def print_list_of_users():
+    all_users = firebase_db.child(users_collection).get()
+
+    for user in all_users:
+        logger.info('Name: %s, PhoneNumber: %s', all_users[user][user_name], all_users[user][phone_number])
+
+    logger.info('Total %s users', len(all_users))
