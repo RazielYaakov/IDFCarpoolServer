@@ -125,7 +125,6 @@ def delete_user():
 logger.info('Server has reloaded')
 logger.info('Queen Dana Koren')
 logger.info('Razi HaMalic')
-UsersHandler.print_list_of_users()
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0')
