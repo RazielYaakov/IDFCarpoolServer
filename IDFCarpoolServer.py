@@ -5,7 +5,7 @@ from flask import Flask, request
 import RidesHandler
 import UsersHandler
 import log
-from consts import phone_number, ride_ID, user_type, offer_id, request_id
+from consts import phone_number, offer_id, request_id
 
 app = Flask(__name__)
 logger = log.setup_custom_logger()
@@ -29,7 +29,7 @@ def login_user():
     return UsersHandler.login(user_data)
 
 
-#completed
+# completed
 @app.route('/newrideoffer', methods=['POST'])
 def new_ride():
     logger.info('Get request to add new ride: ' + request.url)
@@ -125,7 +125,7 @@ def delete_user():
 logger.info('Server has reloaded')
 logger.info('Queen Dana Koren')
 logger.info('Razi HaMalic')
-
+UsersHandler.print_list_of_users()
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0')
