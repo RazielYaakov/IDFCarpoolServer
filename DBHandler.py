@@ -6,13 +6,13 @@ import os
 import log
 
 logger = log.setup_custom_logger()
-
+private_key = os.environ['PRIVATE_KEY']
 logger.info('Initialize connection with Firebase-DB')
 c = {
     "type": "service_account",
     "project_id": "carpool-832da",
-    "private_key_id": str(os.environ['PRIVATE_KEY_ID']),
-    "private_key": str(os.environ['PRIVATE_KEY']),
+    "private_key_id": os.environ['PRIVATE_KEY_ID'],
+    "private_key": private_key.replace("\\n", "\n"),
     "client_email": "firebase-adminsdk-q1v82@carpool-832da.iam.gserviceaccount.com",
     "client_id": "115695783675345850330",
     "auth_uri": "https://accounts.google.com/o/oauth2/auth",
