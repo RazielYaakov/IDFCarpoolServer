@@ -43,6 +43,28 @@ def login(user_data):
         return failure
 
 
+def auto_login(user_phone_number):
+    logger.info('User with phoneNumber=%s trying to auto login', user_phone_number)
+
+    try:
+        logger.info('Trying to get user from DB')
+        user = get_user_from_db(user_phone_number)
+
+        if user is None:
+            logger.info('''User doesn't exists in DB''')
+            return failure
+        else:
+            logger.info("User exists in DB")
+            logger.info('Returning user')
+
+            return success
+    except RequestException as err:
+        logger.error(str(err))
+        logger.warning("User login failed")
+
+        return failure
+
+
 def build_new_user_object(user_data):
     return {
         user_name: user_data[user_name],

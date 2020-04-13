@@ -30,6 +30,15 @@ def login_user():
 
 
 # completed
+@app.route('/autologin', methods=['POST'])
+def auto_login_user():
+    logger.info('Get request to login: ' + request.url)
+    user_phone_number = request.args.get(phone_number)
+
+    return UsersHandler.auto_login(user_phone_number)
+
+
+# completed
 @app.route('/newrideoffer', methods=['POST'])
 def new_ride():
     logger.info('Get request to add new ride: ' + request.url)
