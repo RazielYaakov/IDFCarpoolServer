@@ -24,6 +24,7 @@ def login(user_data):
             logger.info('''User doesn't exists in DB''')
             logger.info('Trying to create new user')
 
+            # validate_user_is_real_soldier(user_data)
             firebase_db.child(users_collection).child(user_data[phone_number]).set(build_new_user_object(user_data))
             logger.info('Creation completed successfully')
             logger.info('Returning success')
@@ -31,9 +32,10 @@ def login(user_data):
             return success
         else:
             logger.info("User exists in DB")
-            logger.info('Returning success')
+            # validate_user_is_real_soldier(user_data)
+            logger.info('Returning user')
 
-            return success
+            return user
     except RequestException as err:
         logger.error(str(err))
         logger.warning("User login failed")
@@ -126,3 +128,7 @@ def print_list_of_users():
         logger.info('Name: %s, PhoneNumber: %s', all_users[user][user_name], all_users[user][phone_number])
 
     logger.info('Total %s users', len(all_users))
+
+
+def validate_user_is_real_soldier(user_data):
+    return True
