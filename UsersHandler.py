@@ -33,6 +33,9 @@ def login(user_data):
         else:
             logger.info("User exists in DB")
             # validate_user_is_real_soldier(user_data)
+            logger.info('Updating user token')
+            firebase_db.child(users_collection).child(user_data[phone_number]).\
+                child(token).set(user_data[token])
             logger.info('Returning user')
 
             return user
