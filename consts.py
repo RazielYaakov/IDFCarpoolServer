@@ -1,4 +1,5 @@
 user_type = 'userType'
+group_type = 'groupType'
 phone_number = 'phoneNumber'
 user_name = 'name'
 address = 'address'
