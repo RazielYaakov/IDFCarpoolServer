@@ -48,6 +48,7 @@ def build_ride_offer_object(ride_offer, driver):
         date: str(arrow.get(ride_offer[date])),
         phone_number: driver[phone_number],
         user_name: driver[user_name],
+        group_type: ride_offer[group_type],
         permanent_offer: ride_offer[permanent_offer]
     }
 
@@ -74,6 +75,7 @@ def is_same_offer(offer_from_db, new_ride_offer):
                offer_from_db[source] == new_ride_offer[source] and \
                offer_from_db[destination] == new_ride_offer[destination] and \
                offer_from_db[permanent_offer] == new_ride_offer[permanent_offer] and \
+               offer_from_db[group_type] == new_ride_offer[group_type] and \
                offer_from_db[date] == str(arrow.get(new_ride_offer[date]))
 
     return False
@@ -114,6 +116,7 @@ def get_optional_offers(ride_request):
 def is_optional_offer(optional_offer, ride_request):
     return optional_offer[phone_number] != ride_request[phone_number] and \
            optional_offer[destination] == ride_request[destination] and \
+           optional_offer[group_type] == ride_request[group_type] and \
            is_matching_hours(optional_offer[date], str(arrow.get(ride_request[date])),
                              optional_offer[permanent_offer])
 
@@ -538,3 +541,6 @@ def is_valid_token(user):
 
     logger.info('User token is invalid, not sending notification')
     return False
+
+def dsada():
+    PushNotificationsHandler.send_push_notification("ExponentPushToken[cV-aGIPyZONxY-arwLaHY6]", "אופיר יא מאליכ")
