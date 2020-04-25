@@ -541,6 +541,3 @@ def is_valid_token(user):
 
     logger.info('User token is invalid, not sending notification')
     return False
-
-def dsada():
-    PushNotificationsHandler.send_push_notification("ExponentPushToken[cV-aGIPyZONxY-arwLaHY6]", "אופיר יא מאליכ")
